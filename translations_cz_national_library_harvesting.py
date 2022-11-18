@@ -10,6 +10,8 @@ import os
 import glob
 import regex as re
 import pandas as pd
+import sys
+sys.path.insert(1, 'C:/Users/Cezary/Documents/IBL-PAN-Python')
 from my_functions import mrc_to_mrk
 from tqdm import tqdm
 from pydrive.auth import GoogleAuth
@@ -28,8 +30,10 @@ day = '{:02d}'.format(now.day)
 
 # vars
 set_oai = 'SKC'
-savefile = f'F:/Cezary/Documents/IBL/Translations/nkc_{set_oai}_{year}-{month}-{day}.marc'
-logfile = f'F:/Cezary/Documents/IBL/Translations/nkc_{set_oai}_log_{year}-{month}-{day}.txt'
+savefile = f'C:/Users/Cezary/Documents/nkc_{set_oai}_{year}-{month}-{day}.marc'
+# savefile = f'F:/Cezary/Documents/IBL/Translations/nkc_{set_oai}_{year}-{month}-{day}.marc'
+# logfile = f'F:/Cezary/Documents/IBL/Translations/nkc_{set_oai}_log_{year}-{month}-{day}.txt'
+logfile = f'C:/Users/Cezary/Documents/nkc_{set_oai}_log_{year}-{month}-{day}.txt'
 # savefile = f'C:/Users/User/Desktop/nkp_nkc_{year}-{month}-{day}.marc'
 # logfile = f'C:/Users/User/Desktop/2021-03-18/log_{year}-{month}-{day}.txt'
 URL = 'https://aleph.nkp.cz/OAI'
@@ -38,7 +42,7 @@ stop_date = datetime.now().replace(minute=0, hour=0, second=0, microsecond=0).st
 
 #testy
 start_date = '2014-12-29 00:00:00'   
-stop_date = '2014-12-29 00:00:00'
+stop_date = '2014-12-31 00:00:00'
 
 # defs
 
@@ -98,7 +102,8 @@ print('Done.')
 
 #%% processing mrc to df
 
-mrc_to_mrk('C:/Users/User/Desktop/nkp_nkc_2021-04-07.marc', 'C:/Users/User/Desktop/nkp_nkc_2021-04-07.mrk')
+# mrc_to_mrk('C:/Users/User/Desktop/nkp_nkc_2021-04-07.marc', 'C:/Users/User/Desktop/nkp_nkc_2021-04-07.mrk')
+mrc_to_mrk(r"C:\Users\Cezary\Documents\nkc_SKC_2022-11-18.marc", r"C:\Users\Cezary\Documents\nkc_SKC_2022-11-18.mrk")
 
 fiction_types = ['1', 'd', 'f', 'h', 'j', 'p', 'u', '|', '\\']
 
@@ -108,6 +113,7 @@ encoding = 'utf-8'
 new_list = []
 
 # marc_list = io.open('C:/Users/User/Desktop/nkp_nkc_2021-04-07.mrk', 'rt', encoding = encoding).read().splitlines()
+marc_list = io.open(r"C:\Users\Cezary\Documents\nkc_SKC_2022-11-18.mrk", 'rt', encoding = encoding).read().splitlines()
 
 mrk_list = []
 for row in marc_list:
