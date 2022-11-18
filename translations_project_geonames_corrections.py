@@ -3,24 +3,23 @@ import pickle
 import regex as re
 import requests
 import pandas as pd
-from collections import Counter
+from collections import Counter, defaultdict, ChainMap
+import sys
+sys.path.insert(1, 'C:/Users/Cezary/Documents/IBL-PAN-Python')
 from my_functions import marc_parser_dict_for_field, create_google_worksheet, gsheet_to_df, cluster_strings
 import numpy as np
 from unidecode import unidecode
-import sys
 sys.path.insert(1, 'C:/Users/Cezary/Documents/miasto-wies')
 from geonames_accounts import geonames_users
 import random
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
-from collections import defaultdict
 from ast import literal_eval
 from itertools import groupby
 import gspread as gs
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from xml.etree import ElementTree
-from collections import ChainMap
 
 #%% def
 
@@ -659,6 +658,41 @@ df.to_excel('fixed_places_with_geonames.xlsx', index=False)
 #%%następne kroki:
     #1. podmieniam deduplicated wartościami z fixed
 fixed_df = gsheet_to_df('1jwbZZHqzETCkUW04M-ftFt1vx9yyBp_WIfPIJt0JOYs', 'deduplicated_records_to_be_checked_fixed')
+fixed_df['geonames_id'] = fixed_df['geonames_id'].apply(lambda x: [int(e) for e in literal_eval(x)] if not isinstance(x, float) else x)
+
+places_for_query = [e for e in fixed_df['geonames_id'] if not isinstance(e, float)]
+places_for_query = set([e for sub in places_for_query for e in sub])
+
+places_geonames = {}
+users_index = 0
+for place in tqdm(places_for_query):
+    # place = list(places_for_query)[0]
+    url = 'http://api.geonames.org/get?'
+    params = {'username': geonames_users[users_index], 'geonameId': place}
+    response = requests.get(url, params=params)
+    
+    tree = ElementTree.fromstring(response.content)
+    data = dict(ChainMap(*[{e.tag: e.text} for e in tree if e.tag in ['name', 'lat', 'lng', 'geonameId', 'countryName']]))
+    places_geonames.update({place:data})
+#TUTAJ
+
+fixed_places = dict(zip(fixed_df[1], fixed_df['geonames_id']))
+
+fixed_places_geonames = {k:[places_geonames.get(e) for e in v] for k,v in fixed_places.items()}
+{k:v for k,v in fixed_places_geonames.items() if any(e.get('geonameId') == '2661881' for e in v)}
+
+df = pd.DataFrame()
+for k,v in tqdm(fixed_places_geonames.items()):
+    # k = 2968007
+    # v = fixed_places_geonames.get(k)
+    temp_df = pd.DataFrame(v)
+    temp_df['001'] = k
+    df = pd.concat([df, temp_df])
+
+df.reset_index(drop=True, inplace=True)  
+df = df.groupby('001').agg(lambda x: x.to_list()).reset_index()
+
+
 correction_df = gsheet_to_df('1jwbZZHqzETCkUW04M-ftFt1vx9yyBp_WIfPIJt0JOYs', 'fixed')
     #2. grupuję wartości z deduplicated i podmieniam nimi translations_df
     #3. podmieniam translations_df tymi wartościami z fixed, które nie były użyte w deduplicated
