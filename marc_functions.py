@@ -46,7 +46,7 @@ def mrk_to_df(mrk_variable):
     return marc_df
 #converts list of dictionaries into pandas dataframe
 
-def df_to_mrc(df, field_delimiter, path_out, txt_error_file_path):
+def df_to_mrc(df, path_out, txt_error_file_path):
     mrc_errors = []
     df = df.replace(r'^\s*$', np.nan, regex=True)
     outputfile = open(path_out, 'wb')
@@ -100,7 +100,7 @@ mrk_file = read_mrk('MARC21_file.mrk')
 #3. convert .mrk file into dataframe
 mrk_df = mrk_to_df(mrk_file)
 #4. save dataframe as a .marc or .mrc binary file
-df_to_mrc(mrk_df, 'nkc_SKC_new.marc', 'errors.txt')
+df_to_mrc(mrk_df, 'MARC21_file_new.marc', 'errors.txt')
 
 
 
