@@ -678,26 +678,115 @@ for place in tqdm(places_for_query):
 
 fixed_places = dict(zip(fixed_df[1], fixed_df['geonames_id']))
 
-fixed_places_geonames = {k:[places_geonames.get(e) for e in v] for k,v in fixed_places.items()}
-{k:v for k,v in fixed_places_geonames.items() if any(e.get('geonameId') == '2661881' for e in v)}
+fixed_places_geonames = {k:[places_geonames.get(e) for e in v] if isinstance(v, list) else v for k,v in fixed_places.items()}
 
 df = pd.DataFrame()
 for k,v in tqdm(fixed_places_geonames.items()):
     # k = 2968007
     # v = fixed_places_geonames.get(k)
-    temp_df = pd.DataFrame(v)
+    try:
+        temp_df = pd.DataFrame(v)
+    except ValueError:
+        temp_df = pd.DataFrame()
     temp_df['001'] = k
     df = pd.concat([df, temp_df])
 
 df.reset_index(drop=True, inplace=True)  
-df = df.groupby('001').agg(lambda x: x.to_list()).reset_index()
+df = df.groupby('001').agg(lambda x: x.to_list()).reset_index().rename(columns={'countryName': 'geonames_country', 'geonameId': 'geonames_id', 'lng': 'geonames_lng', 'lat': 'geonames_lat', 'name': 'geonames_name'})[['001', 'geonames_id', 'geonames_name', 'geonames_country', 'geonames_lat', 'geonames_lng']]
 
+fixed_df_corrected = pd.merge(fixed_df[['group', 1]].rename(columns={1: '001'}), df, on='001', how='left')
 
-correction_df = gsheet_to_df('1jwbZZHqzETCkUW04M-ftFt1vx9yyBp_WIfPIJt0JOYs', 'fixed')
+meta_fixed = fixed_df_corrected.groupby('group').agg(lambda x: x.to_list()).reset_index()
+for column in meta_fixed[['geonames_id', 'geonames_name', 'geonames_country', 'geonames_lat', 'geonames_lng']]:
+    new_column = []
+    for cell in meta_fixed[column]:
+        # cell = test['geonames_id'][2]
+        cell = [e for e in cell if not isinstance(e, float)]
+        cell = [e for sub in cell for e in sub]
+        new_column.append(cell)
+    meta_fixed[column] = new_column
+
+def get_unique_indexes(x):
+    # x = test['geonames_id'][1]
+    indexes = []
+    unique_values = []
+    for i, e in enumerate(x):
+        if e not in unique_values:
+            unique_values.append(e)
+            indexes.append(i)
+    return indexes
+
+meta_fixed['indexes'] = meta_fixed['geonames_id'].apply(lambda x: get_unique_indexes(x))
+
+columns = ['geonames_id', 'geonames_name', 'geonames_country', 'geonames_lat', 'geonames_lng']
+for column in columns:
+    # column = columns[0]
+    new_column = []
+    for i, cell in enumerate(meta_fixed[column]):
+        new_cell = [e for ind, e in enumerate(cell) if ind in meta_fixed['indexes'][i]]
+        new_column.append(new_cell)
+    meta_fixed[column] = new_column
+meta_fixed.drop(columns='indexes', inplace=True)
+
     #2. grupuję wartości z deduplicated i podmieniam nimi translations_df
+translations_df = pd.read_excel('translations_after_manual_2022-11-02.xlsx')
+meta_fixed['001'] = meta_fixed['group'].astype(np.int64)
+meta_fixed.drop(columns='group', inplace=True)
+
+test = translations_df.loc[translations_df['001'].isin(meta_fixed['001'].to_list())]
+test['001'] = test['001'].astype(np.int64)
+test = pd.merge(test.drop(columns=['geonames_id', 'geonames_name', 'geonames_country', 'geonames_lat', 'geonames_lng']), meta_fixed, on='001', how='left')
+translations_df = translations_df.loc[~translations_df['001'].isin(test['001'].to_list())]
+translations_df = pd.concat([translations_df, test])
+  
     #3. podmieniam translations_df tymi wartościami z fixed, które nie były użyte w deduplicated
-translations_df = pd.read_excel('translations_after_manual_2022-11-02.xlsx') 
+correction_df = gsheet_to_df('1jwbZZHqzETCkUW04M-ftFt1vx9yyBp_WIfPIJt0JOYs', 'fixed')
+correction_df = correction_df.loc[correction_df['jest w deduplicated'] == 'False'].drop(columns='jest w deduplicated')
+correction_df['001'] = correction_df['001'].astype(np.int64)
+test = translations_df.loc[translations_df['001'].isin(correction_df['001'].to_list())]
+test['001'] = test['001'].astype(np.int64)
+test = pd.merge(test.drop(columns=['geonames_id', 'geonames_name', 'geonames_country', 'geonames_lat', 'geonames_lng']), correction_df, on='001', how='left')
+translations_df = translations_df.loc[~translations_df['001'].isin(test['001'].to_list())]
+translations_df = pd.concat([translations_df, test])
+
+translations_df.to_excel('translations_after_manual_2022-11-21.xlsx', index=False)
     #4. sortuję translations_df i patrzę, czy nie można, czegoś semi-automatycznie naprawić (np. Dusseldorf)
+#WRÓCIĆ
+#tutaj zaznaczyć wszystkie rekordy, które mają podejrzane miejscowości (coś mogłem przeoczyć): arkusz edit
+    #5. dla rekordów, które nie mają geonames, szukam po nazwie wydawnictwa, czy jest w rekordach z miejscem, jeśli tak, to przejmuję
+
+edit = pd.read_excel('translations_after_manual_2022-11-21.xlsx', sheet_name='edit')
+no_geo_tag = edit.loc[edit['geonames_id'].isna()][['001', '260']]
+publishing_houses = [e[-1] for e in no_geo_tag.values.tolist() if isinstance(e[-1], str)]
+publishing_houses = [[list(el.values()) for el in marc_parser_dict_for_field(e, '\$') if '$a' in el or '$b' in el] for e in publishing_houses]
+publishing_houses = [e for sub in publishing_houses for e in sub]
+publishing_houses = [e.strip() for sub in publishing_houses for e in sub]
+test = dict(Counter(publishing_houses))
+
+
+#do usunięcia:
+    # 847948186, 855576165
+
+# wszystkie geonames sprowadzić do postaci intigera
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
