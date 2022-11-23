@@ -674,7 +674,6 @@ for place in tqdm(places_for_query):
     tree = ElementTree.fromstring(response.content)
     data = dict(ChainMap(*[{e.tag: e.text} for e in tree if e.tag in ['name', 'lat', 'lng', 'geonameId', 'countryName']]))
     places_geonames.update({place:data})
-#TUTAJ
 
 fixed_places = dict(zip(fixed_df[1], fixed_df['geonames_id']))
 
@@ -752,6 +751,74 @@ translations_df = pd.concat([translations_df, test])
 translations_df.to_excel('translations_after_manual_2022-11-21.xlsx', index=False)
     #4. sortuję translations_df i patrzę, czy nie można, czegoś semi-automatycznie naprawić (np. Dusseldorf)
 #WRÓCIĆ
+edit = pd.read_excel('translations_after_manual_2022-11-21.xlsx', sheet_name='edit')
+edit_x = edit.loc[edit['errors'] == 'x']
+edit2 = pd.read_excel('test.xlsx')
+edit2_x = edit2.loc[edit2['errors'] == 'x']
+
+edit = pd.concat([edit_x,edit2_x])
+edit.to_excel('edit.xlsx', index=False)
+
+edited = pd.read_excel('edit.xlsx')
+edited['geonames_id'] = edited['geonames_id'].apply(lambda x: [int(e) for e in literal_eval(x)] if not isinstance(x, float) else x)
+
+places_for_query = [e for e in edited['geonames_id'] if not isinstance(e, float)]
+places_for_query = set([e for sub in places_for_query for e in sub])
+
+places_geonames = {}
+users_index = 0
+for place in tqdm(places_for_query):
+    # place = list(places_for_query)[0]
+    url = 'http://api.geonames.org/get?'
+    params = {'username': geonames_users[users_index], 'geonameId': place}
+    response = requests.get(url, params=params)
+    
+    tree = ElementTree.fromstring(response.content)
+    data = dict(ChainMap(*[{e.tag: e.text} for e in tree if e.tag in ['name', 'lat', 'lng', 'geonameId', 'countryName']]))
+    places_geonames.update({place:data})
+
+fixed_places = dict(zip(edited['001'], edited['geonames_id']))
+
+fixed_places_geonames = {k:[places_geonames.get(e) for e in v] if isinstance(v, list) else v for k,v in fixed_places.items()}
+
+df = pd.DataFrame()
+for k,v in tqdm(fixed_places_geonames.items()):
+    # k = 2968007
+    # v = fixed_places_geonames.get(k)
+    try:
+        temp_df = pd.DataFrame(v)
+    except ValueError:
+        temp_df = pd.DataFrame()
+    temp_df['001'] = k
+    df = pd.concat([df, temp_df])
+
+df.reset_index(drop=True, inplace=True)  
+df = df.groupby('001').agg(lambda x: x.to_list()).reset_index().rename(columns={'countryName': 'geonames_country', 'geonameId': 'geonames_id', 'lng': 'geonames_lng', 'lat': 'geonames_lat', 'name': 'geonames_name'})[['001', 'geonames_id', 'geonames_name', 'geonames_country', 'geonames_lat', 'geonames_lng']]
+
+translations_df = pd.read_excel('translations_after_manual_2022-11-21.xlsx')
+translations_df['geonames_id'] = translations_df['geonames_id'].apply(lambda x: [int(e) for e in literal_eval(x)] if pd.notnull(x) else x)
+test = translations_df.loc[translations_df['001'].isin(df['001'].to_list())]
+test = pd.merge(test.drop(columns=['geonames_id', 'geonames_name', 'geonames_country', 'geonames_lat', 'geonames_lng']), df, on='001', how='left')
+translations_df = translations_df.loc[~translations_df['001'].isin(test['001'].to_list())]
+translations_df = pd.concat([translations_df, test])
+translations_df['geonames_id'] = translations_df['geonames_id'].apply(lambda x: [int(e) for e in x] if isinstance(x, list) else x)
+
+translations_df.to_excel('translations_after_manual_2022-11-23.xlsx', index=False)
+
+# geonames_ids = [literal_eval(e) for e in edit.loc[edit['errors'] == 'x']['geonames_id'].to_list()]
+# geonames_ids = set([int(e) for sub in geonames_ids for e in sub])
+
+# translations_df = pd.read_excel('translations_after_manual_2022-11-21.xlsx', sheet_name='Sheet1')
+# translations_df['geonames_id'] = translations_df['geonames_id'].apply(lambda x: [int(e) for e in literal_eval(x)] if pd.notnull(x) else x)
+
+# selected = translations_df.loc[translations_df['geonames_id'].apply(lambda x: True if isinstance(x, list) and [e for e in x if e in geonames_ids] else False)]
+
+# ids = [1275339, 1692192, 1788927, 1793705, 1788927, 1793511, 1788927, 1805540, 1850147, 2514256, 2610310, 2618425, 2619669, 2638703, 264371, 2660076, 456172, 2719318, 2928810, 2761669, 2814880, 2825297, 2842688, 2873289, 2873759, 2873891, 12358494, 2898304, 2936759, 2942341, 2951881, 3057304, 2988507, 3077920, 3080047, 3085056, 3097257, 3102456, 3105976, 3117735, 3165185, 3170102, 3191839, 3194452, 3186886, 3448439, 3469058, 3703443, 4464368, 4509177, 4744091, 5052916, 4930956, 5037649, 5809844, 6544440, 668746, 6930414, 7280438, 758248, 8948794]
+
+# selected_2 = translations_df.loc[translations_df['geonames_id'].apply(lambda x: True if isinstance(x, list) and [e for e in x if e in ids] else False)]
+# selected_2 = selected_2.loc[~selected_2['001'].isin(edit_x['001'].to_list())][['001', '008', '100', '245', '260', 'geonames_id', 'geonames_name', 'geonames_country', 'geonames_lat', 'geonames_lng']]
+# selected_2.to_excel('test.xlsx', index=False)
+
 #tutaj zaznaczyć wszystkie rekordy, które mają podejrzane miejscowości (coś mogłem przeoczyć): arkusz edit
     #5. dla rekordów, które nie mają geonames, szukam po nazwie wydawnictwa, czy jest w rekordach z miejscem, jeśli tak, to przejmuję
 
@@ -763,7 +830,62 @@ publishing_houses = [e for sub in publishing_houses for e in sub]
 publishing_houses = [e.strip() for sub in publishing_houses for e in sub]
 test = dict(Counter(publishing_houses))
 
+publisher_fixed = pd.read_excel('publishers_fixed.xlsx')
+publisher_fixed = publisher_fixed.loc[publisher_fixed['geonames'].notnull()]
+publisher_fixed['geonames'] = publisher_fixed['geonames'].apply(lambda x: [int(e) for e in literal_eval(x)])
+publisher_fixed_dict = dict(zip(publisher_fixed['publisher'], publisher_fixed['geonames']))
 
+places_for_query = set([el for sub in publisher_fixed_dict.values() for el in sub])
+
+places_geonames = {}
+users_index = 0
+for place in tqdm(places_for_query):
+    # place = list(places_for_query)[0]
+    url = 'http://api.geonames.org/get?'
+    params = {'username': geonames_users[users_index], 'geonameId': place}
+    response = requests.get(url, params=params)
+    
+    tree = ElementTree.fromstring(response.content)
+    data = dict(ChainMap(*[{e.tag: e.text} for e in tree if e.tag in ['name', 'lat', 'lng', 'geonameId', 'countryName']]))
+    places_geonames.update({place:data})
+
+fixed_places = {k:[places_geonames.get(e) for e in v] for k,v in publisher_fixed_dict.items()}
+
+ttt = dict(zip(no_geo_tag['001'], no_geo_tag['260']))
+ttt = {k:v for k,v in ttt.items() if not isinstance(v, float)}
+ttt2 = {k:v for k,v in ttt.items() if any(e in v for e in fixed_places)}
+
+test_dict = {}
+for string in fixed_places:
+    for field in ttt2.values():
+        if string in field:
+            test_dict.update({string: field})
+
+print(list(test_dict.keys())[list(test_dict.values()).index(r'\1$bAbacus,$c2014.')])
+ttt3 = {k:fixed_places.get(list(test_dict.keys())[list(test_dict.values()).index(v)]) if v in test_dict.values() else None for k,v in ttt2.items()}
+fixed_places_geonames = {k:v for k,v in ttt3.items() if v}
+
+df = pd.DataFrame()
+for k,v in tqdm(fixed_places_geonames.items()):
+    # k = 2968007
+    # v = fixed_places_geonames.get(k)
+    try:
+        temp_df = pd.DataFrame(v)
+    except ValueError:
+        temp_df = pd.DataFrame()
+    temp_df['001'] = k
+    df = pd.concat([df, temp_df])
+
+df.reset_index(drop=True, inplace=True)  
+df = df.groupby('001').agg(lambda x: x.to_list()).reset_index().rename(columns={'countryName': 'geonames_country', 'geonameId': 'geonames_id', 'lng': 'geonames_lng', 'lat': 'geonames_lat', 'name': 'geonames_name'})[['001', 'geonames_id', 'geonames_name', 'geonames_country', 'geonames_lat', 'geonames_lng']]
+df['geonames_id'] = df['geonames_id'].apply(lambda x: [int(e) for e in x])
+
+test = translations_df.loc[translations_df['001'].isin(df['001'].to_list())]
+test = pd.merge(test.drop(columns=['geonames_id', 'geonames_name', 'geonames_country', 'geonames_lat', 'geonames_lng']), df, on='001', how='left')
+translations_df = translations_df.loc[~translations_df['001'].isin(test['001'].to_list())]
+translations_df = pd.concat([translations_df, test])
+
+translations_df.to_excel('translations_after_manual_full_geonames_2022-11-23.xlsx', index=False)
 #do usunięcia:
     # 847948186, 855576165
 
