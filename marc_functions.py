@@ -35,6 +35,7 @@ def read_mrk(path):
         records.append(record_dict)
     return records
 #loads the .mrk file as a list of dictionaries
+#elaborate more
 
 def mrk_to_df(mrk_variable):
     marc_df = pd.DataFrame(mrk_variable)
@@ -53,18 +54,15 @@ def df_to_mrc(df, path_out, txt_error_file_path):
     errorfile = io.open(txt_error_file_path, 'wt', encoding='UTF-8')
     list_of_dicts = df.to_dict('records')
     for record in tqdm(list_of_dicts, total=len(list_of_dicts)):
-        # record = list_of_dicts[0]
         record = {k: v for k, v in record.items() if not isinstance(v, float)}
         try:
-            pymarc_record = pymarc.Record(to_unicode=True, force_utf8=True, leader=record['LDR'][0])
-            # record = {k:v for k,v in record.items() if any(a == k for a in ['LDR', 'AVA']) or re.findall('\d{3}', str(k))}
+            pymarc_record = pymarc.Record(to_unicode=True, force_utf8=True, leader=record['LDR'][0].replace('\\', ' '))
             for k, v in record.items():
-                # v = str(v).split(field_delimiter)
                 if k == 'LDR':
                     pass
                 elif k.isnumeric() and int(k) < 10:
                     tag = k
-                    data = ''.join(v)
+                    data = ''.join(v).replace('\\', ' ')
                     marc_field = pymarc.Field(tag=tag, data=data)
                     pymarc_record.add_ordered_field(marc_field)
                 else:
@@ -91,6 +89,7 @@ def df_to_mrc(df, path_out, txt_error_file_path):
             errorfile.write(str(element) + '\n\n')
     errorfile.close()
     outputfile.close()
+#elaborate more
 #%% main (example of use)
 
 #1. convert .marc or .mrc binary file to .mrk text file
