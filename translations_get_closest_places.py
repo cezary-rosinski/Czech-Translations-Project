@@ -28,15 +28,6 @@ for i, row in places_df.iterrows():
     
 places_locations_dict = {k:(float(places_dict.get(k).get('geonames_lat')), float(places_dict.get(k).get('geonames_lng'))) for k,v in places_frequency.items()}
 
-
-x = places_df.iloc[0,]
-y = places_df.iloc[1,]
-
-a = [50.08804, 14.42076]
-b = [48.85341, 2.3488]
-
-distance.distance(a,b).km
-
 used_places = set()
 similar_places = {}
 for k,v in tqdm(places_frequency.items()):
@@ -60,6 +51,7 @@ for k,v in tqdm(similar_places_filtered.items()):
     df = pd.concat([df, test_df])
     
 df = df.reset_index(drop=True)
+df['no. of records'] = df['geonames_id'].apply(lambda x: places_frequency.get(x))
 
 df.to_excel('places_with_neighbourhood.xlsx', index=False)
 
