@@ -5,6 +5,9 @@ from geopy import distance
 from tqdm import tqdm
 import warnings
 from pandas.core.common import SettingWithCopyWarning
+import sys
+sys.path.insert(1, 'C:/Users/Cezary/Documents/IBL-PAN-Python')
+from my_functions import gsheet_to_df
 
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 #%%
@@ -55,11 +58,23 @@ df['no. of records'] = df['geonames_id'].apply(lambda x: places_frequency.get(x)
 
 df.to_excel('places_with_neighbourhood.xlsx', index=False)
 
+#%% 20 km range with distance
 
+range_20_km = gsheet_to_df('1fuFy_ZemnkNTP6dAjc6Q3U3HJZL07vsduxDOER8A0ss', '20km')
 
+groupby = range_20_km.groupby('geonames_group')
 
+distance_to_center_dict = {}
+for name, group in tqdm(groupby, total=len(groupby)):
+    # name = '3067696'
+    # group = groupby.get_group(name)
+    center_distance = group.loc[group['geonames_id'] == name][['geonames_lat', 'geonames_lng']].values.tolist()[0]
+    distances_dict = group.copy()[['geonames_id', 'geonames_lat', 'geonames_lng']].values.tolist()
+    distances_dict = dict(zip([e[0] for e in distances_dict], [e[1:] for e in distances_dict]))
+    distances = {k:round(distance.distance(center_distance,v).km, 2) for k,v in distances_dict.items()}
+    distance_to_center_dict.update(distances)
 
-
+df = pd.DataFrame.from_dict(distance_to_center_dict, orient='index').reset_index()
 
 
 

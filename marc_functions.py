@@ -13,7 +13,7 @@ def mrc_to_mrk(path_in, path_out):
     for record in reader:
         writer.write(record)
     writer.close()
-#converts .mrc binary file to .mrk text file
+# The function converts .mrc binary file to .mrk text file. It uses pymarc MARCReader and pymarc TextTwriter to convert a file
     
 def read_mrk(path):
     records = []
@@ -34,8 +34,7 @@ def read_mrk(path):
                     record_dict[key] = [line[6:]]
         records.append(record_dict)
     return records
-#loads the .mrk file as a list of dictionaries
-#elaborate more
+# The function reads .mrk file as a list of strings. Each MARC21 field is represented as a separate list element. Then all of the fields of one bibliographic records are connected in dictionary. The output of the function is a list of dictionaries.
 
 def mrk_to_df(mrk_variable):
     marc_df = pd.DataFrame(mrk_variable)
@@ -45,7 +44,7 @@ def mrk_to_df(mrk_variable):
     fields.sort(key = lambda x: ([str,int].index(type("a" if re.findall(r'\w+', x)[0].isalpha() else 1)), x))
     marc_df = marc_df.reindex(columns=fields)  
     return marc_df
-#converts list of dictionaries into pandas dataframe
+# The function converts list of dictionaries where each dictionary is a separate MARC21 record into pandas dataframe. The list of columns is sorted alphabetically except for the 'leader' which is located on the first position. Each cell represents individual MARC21 field including the indicators.
 
 def df_to_mrc(df, path_out, txt_error_file_path):
     mrc_errors = []
@@ -89,7 +88,8 @@ def df_to_mrc(df, path_out, txt_error_file_path):
             errorfile.write(str(element) + '\n\n')
     errorfile.close()
     outputfile.close()
-#elaborate more
+# The function converts pandas dataframe into MARC21 file and saves .mrc file on the local hard drive. The function's output is also a text file where all possible errors during the conversion are presented. The funcion converts a dataframe into list of dictionaries for the efficiency. Each dictionary is then saved as a pymarc record, where 'leader' field, control fields and bibliographic fields are properly parsed into MARC21 structure including indicators and subfields.
+
 #%% main (example of use)
 
 #1. convert .marc or .mrc binary file to .mrk text file
