@@ -92,14 +92,14 @@ def df_to_mrc(df, path_out, txt_error_file_path):
 
 #%% main (example of use)
 
-#1. convert .marc or .mrc binary file to .mrk text file
-mrc_to_mrk('MARC21_file.marc', 'MARC21_file.mrk')
-#2. read .mrk text file
-mrk_file = read_mrk('MARC21_file.mrk')
-#3. convert .mrk file into dataframe
-mrk_df = mrk_to_df(mrk_file)
-#4. save dataframe as a .marc or .mrc binary file
-df_to_mrc(mrk_df, 'MARC21_file_new.marc', 'errors.txt')
+# #1. convert .marc or .mrc binary file to .mrk text file
+# mrc_to_mrk('MARC21_file.marc', 'MARC21_file.mrk')
+# #2. read .mrk text file
+# mrk_file = read_mrk('MARC21_file.mrk')
+# #3. convert .mrk file into dataframe
+# mrk_df = mrk_to_df(mrk_file)
+# #4. save dataframe as a .marc or .mrc binary file
+# df_to_mrc(mrk_df, 'MARC21_file_new.marc', 'errors.txt')
 
 
 
