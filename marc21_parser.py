@@ -58,26 +58,26 @@ def parse_marc21_column(df, field_id, field_data, subfield_code, delimiter='❦'
 
 #%% example
 
-#parsing field
-marc21_field = '1\$aKundera, Milan,$d1929-$0(NL-LeOCL)06967521X$1http://viaf.org/viaf/51691735'
-marc21_field_parsed = parse_marc21_field(marc21_field, '\\$')
-print(marc21_field_parsed)
-#parsing dataframe
+# #parsing field
+# marc21_field = '1\$aKundera, Milan,$d1929-$0(NL-LeOCL)06967521X$1http://viaf.org/viaf/51691735'
+# marc21_field_parsed = parse_marc21_field(marc21_field, '\\$')
+# print(marc21_field_parsed)
+# #parsing dataframe
 
-marc21_data = {'001': [1, 2, 3, 4, 5],
-               '100': ['1\$aKundera, Milan,$d1929-$0(NL-LeOCL)06967521X$1http://viaf.org/viaf/51691735',
-                     '1\$aKundera, Milan,$d1929-,$eauthor.$1http://viaf.org/viaf/51691735',
-                     '1\$aKundera, Milan$d(1929-....).$4aut$1http://viaf.org/viaf/51691735',
-                     '1\$aKundera, Milan,$d1929-$1http://viaf.org/viaf/51691735',
-                     '1\$aKundera, Milan,$d 1929-$7jk01070894$4aut$1http://viaf.org/viaf/51691735'],
-             '245': ['13$aal-Buṭʼ :$briwāyah /$cMīlān Kūndīrā ; tarjamat Munīrah muṣṭafá.',
-                     '13$aal-Ḥayāt fī makān ʼāk̲ar /$cMīlān Kūndīrā ; tarjamat Muḥammad al-Tuhāmī al-ʻAmmārī.',
-                     '10$aAmodio barregarriak /$cMilan Kundera ; itzultzailea, Karlos Cid Abasolo.$1http://viaf.org/viaf/275194741',
-                     '10$aIzatearen arintasun jasanezina$h[Texto impreso]$cMilan Kundera; Karlos Cid Abasolo, itzultzailea.',
-                     '10$aBesmrtnost /$cM. Kundera ; s češkog prevela Sanja Milićević.$1http://viaf.org/viaf/214778525']}
+# marc21_data = {'001': [1, 2, 3, 4, 5],
+#                '100': ['1\$aKundera, Milan,$d1929-$0(NL-LeOCL)06967521X$1http://viaf.org/viaf/51691735',
+#                      '1\$aKundera, Milan,$d1929-,$eauthor.$1http://viaf.org/viaf/51691735',
+#                      '1\$aKundera, Milan$d(1929-....).$4aut$1http://viaf.org/viaf/51691735',
+#                      '1\$aKundera, Milan,$d1929-$1http://viaf.org/viaf/51691735',
+#                      '1\$aKundera, Milan,$d 1929-$7jk01070894$4aut$1http://viaf.org/viaf/51691735'],
+#              '245': ['13$aal-Buṭʼ :$briwāyah /$cMīlān Kūndīrā ; tarjamat Munīrah muṣṭafá.',
+#                      '13$aal-Ḥayāt fī makān ʼāk̲ar /$cMīlān Kūndīrā ; tarjamat Muḥammad al-Tuhāmī al-ʻAmmārī.',
+#                      '10$aAmodio barregarriak /$cMilan Kundera ; itzultzailea, Karlos Cid Abasolo.$1http://viaf.org/viaf/275194741',
+#                      '10$aIzatearen arintasun jasanezina$h[Texto impreso]$cMilan Kundera; Karlos Cid Abasolo, itzultzailea.',
+#                      '10$aBesmrtnost /$cM. Kundera ; s češkog prevela Sanja Milićević.$1http://viaf.org/viaf/214778525']}
 
-df = pd.DataFrame(marc21_data)
-parsed_100 = parse_marc21_column(df, '001', '100', '\\$', delimiter='❦')
+# df = pd.DataFrame(marc21_data)
+# parsed_100 = parse_marc21_column(df, '001', '100', '\\$', delimiter='❦')
 
 
 
